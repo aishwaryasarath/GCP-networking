@@ -19,3 +19,10 @@ resource "google_compute_subnetwork" "privatesubnet-second-subnet" {
   network       = google_compute_network.privatenet.self_link
   ip_cidr_range = "172.20.0.0/24"
 }
+# Add the privatenet-us-vm instance
+module "privatenet-us-vm" {
+  source              = "./instance"
+  instance_name       = "privatenet-us-vm"
+  instance_zone       = "europe-west1-c"
+  instance_subnetwork = google_compute_subnetwork.privatesubnet-us.self_link
+}
