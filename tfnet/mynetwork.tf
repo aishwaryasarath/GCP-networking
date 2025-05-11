@@ -1,28 +1,38 @@
-variable "instance_name" {}
-variable "instance_zone" {}
-
-variable "instance_type" {
-  default = "e2-standard-2"
+resource "google_compute_network" "mynetwork" {
+  name                    = "mynetwork"
+  auto_create_subnetworks = "true"
 }
 
-variable "instance_subnetwork" {}
+# Create a firewall rule to allow HTTP, SSH, RDP and ICMP traffic on mynetwork
+resource "google_compute_firewall" "mynetwork-allow-http-ssh-rdp-icmp" {
+  name    = "mynetwork-allow-http-ssh-rdp-icmp"
+  source_ranges = [
+    "0.0.0.0/0"
+  ]
+  network = google_compute_network.mynetwork.self_link
 
-resource "google_compute_instance" "vm_instance" {
-  name         = var.instance_name
-  zone         = var.instance_zone
-  machine_type = var.instance_type
-
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-11"
-    }
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "80", "3389"]
   }
 
-  network_interface {
-    subnetwork = var.instance_subnetwork
-
-    access_config {
-      # Allocate a one-to-one NAT IP to the instance
-    }
+  allow {
+    protocol = "icmp"
   }
+}
+
+# Create the mynet-us-vm instance
+module "mynet-us-vm" {
+  source              = "./instance"
+  instance_name       = "mynet-us-vm"
+  instance_zone       = "ZONE 1"
+  instance_subnetwork = google_compute_network.mynetwork.self_link
+}
+
+# Create the mynet-second-vm" instance
+module "mynet-second-vm" {
+  source              = "./instance"
+  instance_name       = "mynet-second-vm"
+  instance_zone       = "ZONE 2"
+  instance_subnetwork = google_compute_network.mynetwork.self_link
 }
